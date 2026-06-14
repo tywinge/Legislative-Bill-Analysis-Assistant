@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legislative Bill Analyst · Commerce, Tech & AI</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/tabler-icons.min.css" />
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <i class="ti ti-building-bank" aria-hidden="true"></i>
+        <span>Bill Analyst</span>
+      </div>
+      <button class="sidebar-close" id="sidebar-close" aria-label="Close sidebar">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Fetch from Congress.gov</div>
+      <div class="url-input-row">
+        <input type="text" id="congress-url" placeholder="Paste Congress.gov bill URL..." />
+        <button id="fetch-btn" onclick="fetchFromCongress()">
+          <i class="ti ti-download"></i>
+        </button>
+      </div>
+      <div id="fetch-status" class="fetch-status"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Search bills</div>
+      <div class="search-row">
+        <i class="ti ti-search search-icon" aria-hidden="true"></i>
+        <input type="text" id="search-input" placeholder="Title or bill number..." oninput="filterBills()" />
+      </div>
+      <select id="topic-filter" onchange="filterBills()">
+        <option value="">All topics</option>
+        <option value="ai">Artificial Intelligence</option>
+        <option value="tech">Technology</option>
+        <option value="commerce">Commerce</option>
+        <option value="telecom">Telecom</option>
+      </select>
+    </div>
+
+    <div class="bill-list" id="bill-list" role="list"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menu-btn" aria-label="Open bill list">
+        <i class="ti ti-menu-2"></i>
+      </button>
+      <div class="topbar-title" id="topbar-title">Select a bill to begin</div>
+      <a class="congress-link" id="congress-link" href="#" target="_blank" style="display:none;">
+        <i class="ti ti-external-link"></i> Congress.gov
+      </a>
+    </header>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="empty-state">
+      <i class="ti ti-file-text" aria-hidden="true"></i>
+      <h2>No bill selected</h2>
+      <p>Choose a bill from the sidebar or paste a Congress.gov URL to begin analysis.</p>
+    </div>
+
+    <!-- Analysis area -->
+    <div class="analysis-area" id="analysis-area" style="display:none;">
+
+      <div class="bill-hero">
+        <div class="bill-hero-id" id="hero-id"></div>
+        <h1 class="bill-hero-title" id="hero-title"></h1>
+        <div class="bill-hero-meta" id="hero-meta"></div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" role="tab" aria-selected="true" onclick="switchTab('summary', this)">
+          <i class="ti ti-align-left"></i> Summary
+        </button>
+        <button class="tab" role="tab" aria-selected="false" onclick="switchTab('brief', this)">
+          <i class="ti ti-file-description"></i> Policy brief
+        </button>
+        <button class="tab" role="tab" aria-selected="false" onclick="switchTab('memo', this)">
+          <i class="ti ti-mail"></i> Memo
+        </button>
+        <button class="tab" role="tab" aria-selected="false" onclick="switchTab('vote', this)">
+          <i class="ti ti-checkup-list"></i> Vote rec
+        </button>
+      </div>
+
+      <!-- Summary tab -->
+      <div class="tab-pane active" id="tab-summary">
+        <div class="pane-toolbar">
+          <span class="pane-label">AI-generated summary</span>
+          <button class="tool-btn" onclick="regenerate('summary')"><i class="ti ti-refresh"></i> Regenerate</button>
+          <button class="tool-btn" onclick="copyPane('summary-content')"><i class="ti ti-copy"></i> Copy</button>
+        </div>
+        <div class="loading" id="loading-summary"><div class="spinner"></div><span>Analyzing bill...</span></div>
+        <div class="content-box" id="summary-content"></div>
+        <div class="quick-actions" id="summary-actions" style="display:none;">
+          <span class="pane-label">Generate next</span>
+          <button class="action-btn" onclick="generateContent('brief'); switchTab('brief', document.querySelectorAll('.tab')[1])">Policy brief ↗</button>
+          <button class="action-btn" onclick="generateContent('memo'); switchTab('memo', document.querySelectorAll('.tab')[2])">Memo ↗</button>
+          <button class="action-btn" onclick="generateContent('vote'); switchTab('vote', document.querySelectorAll('.tab')[3])">Vote rec ↗</button>
+        </div>
+      </div>
+
+      <!-- Brief tab -->
+      <div class="tab-pane" id="tab-brief">
+        <div class="pane-toolbar">
+          <span class="pane-label">Policy brief</span>
+          <button class="tool-btn" onclick="regenerate('brief')"><i class="ti ti-refresh"></i> Regenerate</button>
+          <button class="tool-btn" onclick="copyPane('brief-content')"><i class="ti ti-copy"></i> Copy</button>
+          <button class="tool-btn" onclick="exportTxt('brief')"><i class="ti ti-download"></i> Export .txt</button>
+        </div>
+        <div class="loading" id="loading-brief"><div class="spinner"></div><span>Drafting policy brief...</span></div>
+        <div class="content-box" id="brief-content"></div>
+      </div>
+
+      <!-- Memo tab -->
+      <div class="tab-pane" id="tab-memo">
+        <div class="pane-toolbar">
+          <span class="pane-label">Internal memo</span>
+          <button class="tool-btn" onclick="regenerate('memo')"><i class="ti ti-refresh"></i> Regenerate</button>
+          <button class="tool-btn" onclick="copyPane('memo-content')"><i class="ti ti-copy"></i> Copy</button>
+          <button class="tool-btn" onclick="exportTxt('memo')"><i class="ti ti-download"></i> Export .txt</button>
+        </div>
+        <div class="loading" id="loading-memo"><div class="spinner"></div><span>Drafting memo...</span></div>
+        <div class="content-box" id="memo-content"></div>
+      </div>
+
+      <!-- Vote rec tab -->
+      <div class="tab-pane" id="tab-vote">
+        <div class="pane-toolbar">
+          <span class="pane-label">Vote recommendation</span>
+          <button class="tool-btn" onclick="regenerate('vote')"><i class="ti ti-refresh"></i> Regenerate</button>
+          <button class="tool-btn" onclick="copyPane('vote-rationale')"><i class="ti ti-copy"></i> Copy rationale</button>
+        </div>
+        <div class="loading" id="loading-vote"><div class="spinner"></div><span>Generating vote recommendation...</span></div>
+        <div id="vote-output" style="display:none;">
+          <div class="vote-cards">
+            <div class="vote-card aye" id="vc-aye">
+              <div class="vote-icon"><i class="ti ti-thumb-up"></i></div>
+              <div class="vote-label">Aye</div>
+              <div class="vote-case" id="vc-aye-case"></div>
+            </div>
+            <div class="vote-card nay" id="vc-nay">
+              <div class="vote-icon"><i class="ti ti-thumb-down"></i></div>
+              <div class="vote-label">Nay</div>
+              <div class="vote-case" id="vc-nay-case"></div>
+            </div>
+            <div class="vote-card abstain" id="vc-abstain">
+              <div class="vote-icon"><i class="ti ti-minus"></i></div>
+              <div class="vote-label">Abstain</div>
+              <div class="vote-case" id="vc-abstain-case"></div>
+            </div>
+          </div>
+          <div class="pane-label" style="margin: 1.5rem 0 0.5rem;">Recommendation rationale</div>
+          <div class="content-box" id="vote-rationale"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="js/bills.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
